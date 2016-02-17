@@ -190,7 +190,7 @@ startServer = (program, defaultGraph) ->
         else
           cleanup()
 
-  console.og 'calling server.listen'
+  console.log 'calling server.listen'
   server.listen stored.port, ->
     if stored.certs
       address = 'wss://' + stored.host + ':' + stored.port
