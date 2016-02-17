@@ -190,7 +190,7 @@ startServer = (program, defaultGraph) ->
         else
           cleanup()
 
-  console.log 'calling server.listen'
+  console.log 'calling server.listen on '+stored.host
   server.listen stored.port, ->
     console.log 'server listening'
     if stored.certs
