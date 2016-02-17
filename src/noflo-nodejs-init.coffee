@@ -30,6 +30,9 @@ program = (require 'yargs')
     permissions:
       default: 'protocol:component,protocol:runtime,protocol:graph,protocol:network,component:getsource,component:setsource'
       describe: 'Permissions'
+    certs:
+      default: ''
+      describe: 'directory for certificate files to enable secure websockets (wss://)'
   )
   .usage('Usage: $0 [options]')
   .version(lib.getLibraryConfig().version, 'V').alias('V', 'version')
@@ -60,6 +63,7 @@ values =
   label: program.label
   secret: program.secret
   permissions: permissions if permissions
+  certs: program.certs if program.certs
 lib.saveStored values
 console.log 'Stored the following configuration to ' + lib.getStoredPath() + '\n'
 

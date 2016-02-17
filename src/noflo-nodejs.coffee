@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 clc = require 'cli-color'
 http = require 'http'
+https = require 'https'
 lib = require '../index'
 noflo = require 'noflo'
 trace = require('noflo-runtime-base').trace
@@ -59,6 +60,10 @@ program = (require 'yargs')
       default: true
       description: 'Register the runtime with Flowhub'
       type: 'boolean'
+    certs:
+      default: false
+      description: 'directory for certificate files to enable secure websockets (wss://)'
+      type: 'string'
   )
   .usage('Usage: $0 [options]')
   .version(lib.getLibraryConfig().version, 'V').alias('V', 'version')
@@ -77,6 +82,12 @@ stored = lib.getStored program
 baseDir = process.env.PROJECT_HOME or process.cwd()
 interval = 10 * 60 * 1000
 flowhubRuntime = null
+if stored.certs
+  protocol = 'secure websocket'
+  address = 'wss://' + stored.host + ':' + stored.port
+else
+  protocol = 'websocket'
+  address = 'ws://' + stored.host + ':' + stored.port
 if program.register
   unless stored.id
     console.error 'No configuration found at ' + lib.getStoredPath() + '. Please run noflo-nodejs-init first if you want the runtime to showup on flowhub. You can also pass a UUID via --uuid'
@@ -87,8 +98,9 @@ if program.register
       id: stored.id
       user: stored.user
       secret: stored.secret
-      protocol: 'websocket'
-      address: 'ws://' + stored.host + ':' + stored.port
+      protocol: protocol
+      address: address
+      certs: stored.certs if stored.certs
       type: 'noflo-nodejs'
   catch e
     console.log 'Failed to initialize runtime with configuration:', e.message
@@ -126,7 +138,18 @@ addDebug = (network, verbose, logSubgraph) ->
     console.log "#{identifier(data)} #{clc.yellow('DISC')}"
 
 startServer = (program, defaultGraph) ->
-  server = http.createServer ->
+  if program.certs
+    options =
+      key: fs.readFileSync(program.certs + '/privkey.pem')
+      cert: fs.readFileSync(program.certs + '/fullchain.pem')
+      ca: fs.readFileSync(program.certs + '/chain.pem')
+    console.log 'https'
+    server = https.createServer(options, ->
+    )
+  else
+    console.log 'https'
+    server = http.createServer(->
+    )
 
   rt = runtime server,
     defaultGraph: defaultGraph
@@ -168,7 +191,10 @@ startServer = (program, defaultGraph) ->
           cleanup()
 
   server.listen stored.port, ->
-    address = 'ws://' + stored.host + ':' + stored.port
+    if stored.certs
+      address = 'wss://' + stored.host + ':' + stored.port
+    else
+      address = 'ws://' + stored.host + ':' + stored.port
     params = 'protocol=websocket&address=' + address
     params += '&secret=' + stored.secret if stored.secret
     console.log 'NoFlo runtime listening at ' + address
