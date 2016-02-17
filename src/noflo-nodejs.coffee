@@ -160,7 +160,7 @@ startServer = (program, defaultGraph) ->
     cache: program.cache
 
   tracer = new trace.Tracer {}
-
+  console.log 'setting up sigusr2'
   process.on 'SIGUSR2', () ->
     return console.log 'ERROR: Tracing not enabled' if not program.trace
     tracer.dumpFile null, (err, fname) ->
@@ -190,6 +190,7 @@ startServer = (program, defaultGraph) ->
         else
           cleanup()
 
+  console.og 'calling server.listen'
   server.listen stored.port, ->
     if stored.certs
       address = 'wss://' + stored.host + ':' + stored.port
