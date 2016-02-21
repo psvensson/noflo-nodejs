@@ -83,7 +83,7 @@ baseDir = process.env.PROJECT_HOME or process.cwd()
 interval = 10 * 60 * 1000
 flowhubRuntime = null
 if stored.certs
-  protocol = 'secure websocket'
+  protocol = 'websocket'
   address = 'wss://' + stored.host + ':' + stored.port
 else
   protocol = 'websocket'
