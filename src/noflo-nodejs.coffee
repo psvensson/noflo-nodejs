@@ -138,20 +138,21 @@ addDebug = (network, verbose, logSubgraph) ->
     console.log "#{identifier(data)} #{clc.yellow('DISC')}"
 
 startServer = (program, defaultGraph) ->
-  if program.certs
-    options =
-      key: fs.readFileSync(program.certs + '/privkey.pem')
-      cert: fs.readFileSync(program.certs + '/fullchain.pem')
-      ca: fs.readFileSync(program.certs + '/chain.pem')
-    console.log 'https'
-    server = https.createServer(options, ->
-    )
+  if stored.certs
+    express = require('express')
+    app = express()
+    LEX = require('letsencrypt-express')
+    lex = LEX.create({configDir: stored.certs})
+    #lex.listen([], [stored.port])
+    https = require('http2');
+    server = https.createServer(lex.httpsOptions, LEX.createAcmeResponder(lex, app));
+    server.listen(stored.port)
   else
-    console.log 'https'
     server = http.createServer(->
     )
 
   rt = runtime server,
+    certs: program.certs or stored.certs
     defaultGraph: defaultGraph
     baseDir: baseDir
     captureOutput: program.captureOutput
@@ -160,7 +161,6 @@ startServer = (program, defaultGraph) ->
     cache: program.cache
 
   tracer = new trace.Tracer {}
-  console.log 'setting up sigusr2'
   process.on 'SIGUSR2', () ->
     return console.log 'ERROR: Tracing not enabled' if not program.trace
     tracer.dumpFile null, (err, fname) ->
@@ -190,9 +190,7 @@ startServer = (program, defaultGraph) ->
         else
           cleanup()
 
-  console.log 'calling server.listen on '+stored.host
   server.listen stored.port, ->
-    console.log 'server listening'
     if stored.certs
       address = 'wss://' + stored.host + ':' + stored.port
     else
